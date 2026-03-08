@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+server.log
+vibe_history.json
+vibe_history_v2.json
+archive/
+.claude/
+VibeMonitorSwift/.build/
+VibeMonitorSwift/.swiftpm/
+VibeMonitorSwift/DerivedData/
+*.swp

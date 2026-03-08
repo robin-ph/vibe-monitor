@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div>
+                    <h1>Vibe<span>Monitor</span></h1>
+                    <div class="status-badge" id="ws-status">Disconnected</div>
+                </div>
+            </div>
+            <button class="reset-btn" id="reset-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                Reset
+            </button>
+        </header>
+
+        <!-- Date Navigator -->
+        <nav class="date-nav">
+            <button class="date-arrow" id="date-prev" title="Previous day">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span class="date-display" id="date-display">Today</span>
+            <button class="date-arrow" id="date-next" title="Next day">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="date-today-btn" id="date-today" style="display:none;">Live</button>
+        </nav>
+
+        <!-- Active Turn Indicator -->
+        <section class="active-turn" id="active-turn" style="display:none;">
+            <div class="pulse-dot"></div>
+            <span>Turn <strong id="active-turn-num">-</strong> in progress</span>
+            <span class="active-elapsed" id="active-elapsed">0.0s</span>
+            <span class="active-tool" id="active-tool"></span>
+        </section>
+
+        <!-- Project Filter -->
+        <section class="project-filter" id="project-filter" style="display:none;"></section>
+
+        <!-- Dashboard Grid -->
+        <section class="dashboard-grid">
+            <!-- Stat Cards -->
+            <div class="stat-card">
+                <div class="stat-value" id="total-turns">0</div>
+                <div class="stat-label">Turns</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-time">0s</div>
+                <div class="stat-label">Total Time</div>
+            </div>
+            <div class="stat-card highlight">
+                <div class="stat-value" id="avg-tps">0</div>
+                <div class="stat-label">Avg Thinking tok/s</div>
+            </div>
+
+            <!-- Pie Chart -->
+            <div class="pie-card">
+                <div class="pie-chart-wrap">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stacked Bar Chart -->
+        <section class="chart-card">
+            <div class="section-header">
+                <h2>Time Breakdown by Turn</h2>
+                <div class="legend-inline">
+                    <span class="legend-dot" style="--c: var(--color-thinking)"></span> Thinking
+                    <span class="legend-dot" style="--c: var(--color-tool)"></span> Tool
+                    <span class="legend-dot" style="--c: var(--color-output)"></span> Output
+                    <span class="legend-dot" style="--c: var(--color-network)"></span> Network
+                    <span class="legend-dot" style="--c: var(--color-unaccounted)"></span> Other
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="turnChart"></canvas>
+            </div>
+            <div class="color-explanations">
+                <div class="color-explain-item">
+                    <span class="color-explain-dot" style="background: var(--color-thinking)"></span>
+                    <div>
+                        <strong>Thinking</strong>
+                        <p>Time the model spends reasoning and generating tokens before producing output or calling tools.</p>
+                    </div>
+                </div>
+                <div class="color-explain-item">
+                    <span class="color-explain-dot" style="background: var(--color-tool)"></span>
+                    <div>
+                        <strong>Tool Use</strong>
+                        <p>Time spent executing tool calls (file reads, writes, bash commands, MCP tools, etc.).</p>
+                    </div>
+                </div>
+                <div class="color-explain-item">
+                    <span class="color-explain-dot" style="background: var(--color-output)"></span>
+                    <div>
+                        <strong>Output</strong>
+                        <p>Time spent streaming the final response text back to the user after reasoning.</p>
+                    </div>
+                </div>
+                <div class="color-explain-item">
+                    <span class="color-explain-dot" style="background: var(--color-network)"></span>
+                    <div>
+                        <strong>Network</strong>
+                        <p>API round-trip overhead — time on HTTP requests between the client and Anthropic's servers.</p>
+                    </div>
+                </div>
+                <div class="color-explain-item">
+                    <span class="color-explain-dot" style="background: var(--color-unaccounted)"></span>
+                    <div>
+                        <strong>Other</strong>
+                        <p>Unaccounted time — client-side processing, hook execution, and any gaps not covered above.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Turn List -->
+        <section class="turns-section">
+            <h2>Turn Details</h2>
+            <div class="turn-list" id="turn-list">
+                <div class="empty-state">No turns recorded yet. Start a conversation in Claude Code.</div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

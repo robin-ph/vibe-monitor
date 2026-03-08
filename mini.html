@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Mini</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: rgba(13, 17, 23, 0.85);
+            --accent: #58a6ff;
+            --text: #c9d1d9;
+            --border: #30363d;
+        }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            background: var(--bg);
+            backdrop-filter: blur(10px);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 240px;
+            height: 120px;
+        }
+
+        .mini-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        .main-val {
+            font-size: 24px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .unit {
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .ide-tag {
+            font-size: 11px;
+            background: rgba(88, 166, 255, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+
+        .chart-mini {
+            height: 40px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mini-header">
+        <span>Vibe Monitor</span>
+        <span id="ide-name" class="ide-tag">Detecting...</span>
+    </div>
+    <div class="stats-row">
+        <div class="main-val" id="speed">0</div>
+        <div class="unit">tokens/s</div>
+    </div>
+    <div class="chart-mini">
+        <canvas id="miniChart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('miniChart').getContext('2d');
+        let chart;
+        const dataPoints = 30;
+        let speeds = Array(dataPoints).fill(0);
+
+        function init() {
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(dataPoints).fill(''),
+                    datasets: [{
+                        data: speeds,
+                        borderColor: '#58a6ff',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: 'rgba(88, 166, 255, 0.05)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+                    plugins: { legend: { display: false } },
+                    animation: false
+                }
+            });
+            connect();
+        }
+
+        let tokensThisSec = 0;
+        function connect() {
+            const ws = new WebSocket('ws://localhost:8000/ws');
+            ws.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                if (!Array.isArray(msg)) {
+                    if (msg.event_type === 'stream') {
+                        tokensThisSec += msg.data.chunk_size;
+                    }
+                    if (msg.ide) {
+                        document.getElementById('ide-name').textContent = msg.ide;
+                    }
+                }
+            };
+
+            setInterval(() => {
+                speeds.shift();
+                speeds.push(tokensThisSec);
+                chart.update('none');
+                document.getElementById('speed').textContent = tokensThisSec;
+                tokensThisSec = 0;
+
+                // Sync IDE name occasionally if no events
+                fetch('http://localhost:8000/status')
+                    .then(r => r.json())
+                    .then(d => {
+                        document.getElementById('ide-name').textContent = d.current_ide;
+                    });
+            }, 1000);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
